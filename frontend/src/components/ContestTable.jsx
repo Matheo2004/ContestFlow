@@ -52,16 +52,77 @@ function ContestTable({
 }) {
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState(EMPTY_EDIT);
+  const [sortConfig, setSortConfig] = useState({
+    key: "endDate",
+    direction: "asc"
+  });
 
   const sortedContests = useMemo(
-    () =>
-      [...contests].sort((a, b) => {
-        const aDate = a.endDate ? new Date(a.endDate).getTime() : Number.MAX_SAFE_INTEGER;
-        const bDate = b.endDate ? new Date(b.endDate).getTime() : Number.MAX_SAFE_INTEGER;
-        return aDate - bDate;
-      }),
-    [contests]
+    () => {
+      const sortable = [...contests];
+
+      sortable.sort((a, b) => {
+        let aValue;
+        let bValue;
+
+        switch (sortConfig.key) {
+          case "endDate":
+            aValue = a.endDate ? new Date(a.endDate).getTime() : Number.MAX_SAFE_INTEGER;
+            bValue = b.endDate ? new Date(b.endDate).getTime() : Number.MAX_SAFE_INTEGER;
+            break;
+          case "participations":
+            aValue = Number(a.participations ?? 0);
+            bValue = Number(b.participations ?? 0);
+            break;
+          case "targetParticipations":
+            aValue = Number(a.targetParticipations ?? 0);
+            bValue = Number(b.targetParticipations ?? 0);
+            break;
+          default:
+            aValue = String(a[sortConfig.key] ?? "").toLowerCase();
+            bValue = String(b[sortConfig.key] ?? "").toLowerCase();
+            break;
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === "asc" ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === "asc" ? 1 : -1;
+        }
+        return 0;
+      });
+
+      return sortable;
+    },
+    [contests, sortConfig]
   );
+
+  const toggleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return {
+          key,
+          direction: prev.direction === "asc" ? "desc" : "asc"
+        };
+      }
+
+      return {
+        key,
+        direction: "asc"
+      };
+    });
+  };
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) {
+      return " ";
+    }
+    return sortConfig.direction === "asc" ? " ▲" : " ▼";
+  };
+
+  const sortButtonClassName =
+    "inline-flex items-center gap-1 rounded px-1 py-0.5 hover:bg-slate-100";
 
   const startEdit = (contest) => {
     setEditingId(contest.id);
@@ -102,12 +163,52 @@ function ContestTable({
       <table className="min-w-full text-left text-sm">
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
           <tr>
-            <th className="px-3 py-3">URL</th>
-            <th className="min-w-36 px-3 py-3 whitespace-nowrap">End date</th>
-            <th className="px-3 py-3">Participations</th>
-            <th className="px-3 py-3">Target</th>
-            <th className="px-3 py-3">Status</th>
-            <th className="min-w-56 px-3 py-3">Tags</th>
+            <th className="px-3 py-3">
+              <button type="button" className={sortButtonClassName} onClick={() => toggleSort("url")}>
+                URL{getSortIcon("url")}
+              </button>
+            </th>
+            <th className="min-w-36 px-3 py-3 whitespace-nowrap">
+              <button
+                type="button"
+                className={sortButtonClassName}
+                onClick={() => toggleSort("endDate")}
+              >
+                End date{getSortIcon("endDate")}
+              </button>
+            </th>
+            <th className="px-3 py-3">
+              <button
+                type="button"
+                className={sortButtonClassName}
+                onClick={() => toggleSort("participations")}
+              >
+                Participations{getSortIcon("participations")}
+              </button>
+            </th>
+            <th className="px-3 py-3">
+              <button
+                type="button"
+                className={sortButtonClassName}
+                onClick={() => toggleSort("targetParticipations")}
+              >
+                Target{getSortIcon("targetParticipations")}
+              </button>
+            </th>
+            <th className="px-3 py-3">
+              <button
+                type="button"
+                className={sortButtonClassName}
+                onClick={() => toggleSort("status")}
+              >
+                Status{getSortIcon("status")}
+              </button>
+            </th>
+            <th className="min-w-56 px-3 py-3">
+              <button type="button" className={sortButtonClassName} onClick={() => toggleSort("tags")}>
+                Tags{getSortIcon("tags")}
+              </button>
+            </th>
             <th className="px-3 py-3">Actions</th>
           </tr>
         </thead>
